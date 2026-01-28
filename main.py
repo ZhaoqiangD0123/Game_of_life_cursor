@@ -48,6 +48,7 @@ def update_grid(grid):
 
 # 功能1: 进程初始为暂停状态, 左键控制暂停/继续
 # 功能2: 空格暂停并保存这一帧, 顺序命名, 保存在 image_save 文件夹
+# 新增功能3: 在暂停时，可用鼠标右键点击或拖动修改当前格子的细胞生死状态
 
 def ensure_image_save_directory():
     folder = "image_save"
@@ -79,6 +80,8 @@ grid = [[random.choice([0, 1]) for _ in range(COLS)] for _ in range(ROWS)]
 
 paused = True
 running = True
+editing = False         # 鼠标是否按住右键进行绘制
+last_edit_cell = None   # 用于避免按住拖动时反复切换同一格
 
 while running:
     save_image = False
@@ -88,8 +91,34 @@ while running:
             running = False
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # 鼠标左键控制暂停/继续
-            paused = not paused
+            # 左键作用为暂停/继续
+            if not paused or paused:
+                paused = not paused
+                editing = False
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+            # 右键作用为在暂停时编辑细胞状态
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            col = mouse_x // CELL_SIZE
+            row = mouse_y // CELL_SIZE
+            if paused:
+                if 0 <= row < ROWS and 0 <= col < COLS:
+                    grid[row][col] ^= 1
+                    last_edit_cell = (row, col)
+                editing = True
+
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+            editing = False
+            last_edit_cell = None
+
+        elif event.type == pygame.MOUSEMOTION:
+            if paused and editing:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                col = mouse_x // CELL_SIZE
+                row = mouse_y // CELL_SIZE
+                if 0 <= row < ROWS and 0 <= col < COLS:
+                    if last_edit_cell != (row, col):
+                        grid[row][col] ^= 1
+                        last_edit_cell = (row, col)
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
@@ -98,7 +127,7 @@ while running:
                     save_image = True
 
     # 绘制背景
-    screen.fill(BLACK)
+    screen.fill(WHITE)
 
     # 绘制细胞格子
     for r in range(ROWS):
@@ -106,7 +135,7 @@ while running:
             if grid[r][c] == 1:
                 pygame.draw.rect(
                     screen,
-                    WHITE,
+                    BLACK,
                     (c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 )
 
