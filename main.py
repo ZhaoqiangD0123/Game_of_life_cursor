@@ -83,6 +83,40 @@ running = True
 editing = False         # 鼠标是否按住右键进行绘制
 last_edit_cell = None   # 用于避免按住拖动时反复切换同一格
 
+# --- UI 相关新增 ---
+font = pygame.font.SysFont(None, 24)
+
+generation = 0  # 代数计数器
+
+def count_population(grid):
+    return sum(sum(row) for row in grid)
+
+def draw_status_ui(screen, paused, generation, population):
+    pad = 8
+    lines = [
+        f"Status: {'Paused' if paused else 'Running'}",
+        f"Generation: {generation}",
+        f"Population: {population}"
+    ]
+    rendered_lines = [font.render(line, True, WHITE) for line in lines]
+
+    # 计算背景板尺寸
+    width = max(line.get_width() for line in rendered_lines) + 2 * pad
+    height = sum(line.get_height() for line in rendered_lines) + (len(rendered_lines)-1)*2 + 2 * pad
+
+    # 背景板绘制黑色半透明
+    bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+    bg_surf.fill((0, 0, 0, 200))
+
+    # 文字绘制
+    y_off = pad
+    for l in rendered_lines:
+        bg_surf.blit(l, (pad, y_off))
+        y_off += l.get_height() + 2
+
+    # 放在屏幕左上角
+    screen.blit(bg_surf, (0, 0))
+
 while running:
     save_image = False
 
@@ -125,6 +159,10 @@ while running:
                 if not paused:
                     paused = True
                     save_image = True
+            elif event.key == pygame.K_r:
+                # R键重置：清空网格，generation清零
+                grid = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+                generation = 0
 
     # 绘制背景
     screen.fill(WHITE)
@@ -145,6 +183,10 @@ while running:
     for y in range(0, HEIGHT + 1, CELL_SIZE):
         pygame.draw.line(screen, GRAY, (0, y), (WIDTH, y))
 
+    # 绘制UI
+    population = count_population(grid)
+    draw_status_ui(screen, paused, generation, population)
+
     pygame.display.flip()
     clock.tick(10)
 
@@ -159,6 +201,7 @@ while running:
     # 更新网格状态
     if not paused:
         grid = update_grid(grid)
+        generation += 1
 
 pygame.quit()
 sys.exit()
