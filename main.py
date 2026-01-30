@@ -126,7 +126,6 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # 左键作用为暂停/继续
-            if not paused or paused:
                 paused = not paused
                 editing = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
